@@ -2,8 +2,7 @@ services:
   auth_db:
     image: postgres:16-alpine
     container_name: postgres_db
-    restart: always
-    shm_size: 128mb
+    restart: unless-stopped
     environment:
       POSTGRES_USER: authuser
       POSTGRES_PASSWORD: authuser
@@ -30,6 +29,67 @@ services:
     depends_on:
       auth_db:
         condition: service_healthy
+  flags_db:
+    image: postgres:16-alpine
+    container_name: flags_db
+    environment: 
+      - POSTGRES_USER=flagsuser
+      - POSTGRES_PASSWORD=flagsuser
+      - POSTGRES_DB=flagsuser
+    ports: 
+      - "5433:5432"
+    volumes: 
+      - postgres_data:/var/lib/postgresql/data
+      - ./flag-service/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  flags_service:
+    container_name: flags_service
+    build: ./flag-service
+    environment:
+      - DATABASE_URL="postgres://flagsuser:flagsuser@localhost:5432/flagsuser"
+      - PORT="8002"
+      - AUTH_SERVICE_URL="http://localhost:8001"
+    ports:
+      - "8002:8002"
+    depends_on:
+      flags_db:
+        condition: service_healthy
+  targeting_db:
+    image: postgres:16-alpine
+    container_name: targeting_db
+    environment: 
+      POSTGRES_USER: targetinguser
+      POSTGRES_PASSWORD: targetinguser
+      POSTGRES_DB: targetinguser
+    ports: 
+      - "5434:5432"
+    volumes: 
+      - postgres_data:/var/lib/postgresql/data
+      - ./targeting-service/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  targeting_service:
+    build: ./targeting-service
+    container_name: targeting_service
+    environment:
+      - DATABASE_URL="postgres://SEU_USUARIO:SUA_SENHA@localhost:5432/flags_db"
+      - PORT="8003"
+      - AUTH_SERVICE_URL="http://localhost:8003"
+    ports:
+      - "8003:8003"
+    depends_on:
+      targeting_db:
+        condition: service_healthy
+
+
+    
 
 volumes:
   postgres_data:
