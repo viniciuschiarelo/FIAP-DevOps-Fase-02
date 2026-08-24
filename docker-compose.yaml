@@ -1,0 +1,35 @@
+services:
+  auth_db:
+    image: postgres:16-alpine
+    container_name: postgres_db
+    restart: always
+    shm_size: 128mb
+    environment:
+      POSTGRES_USER: authuser
+      POSTGRES_PASSWORD: authuser
+      POSTGRES_DB: authuser
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./auth-service/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U authuser -d authuser"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  auth-service:
+    build: ./auth-service
+    container_name: auth_service
+    ports:
+      - "8001:8001"
+    environment:
+      - DATABASE_URL=postgres://authuser:authuser@auth_db:5432/authuser?sslmode=disable
+      - PORT=8001
+      - MASTER_KEY=admin-secreto-123
+    depends_on:
+      auth_db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
