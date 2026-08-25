@@ -59,7 +59,7 @@ Saída esperada: `{"status":"ok"}`
 ```bash
 curl -X POST http://localhost:8003/rules \
 -H "Content-Type: application/json" \
--H "Authorization: Bearer SUA_CHAVE_API" \
+-H "Authorization: Bearer tm_key_d42aa2ea6d3ddcf513733eba9d8a90c2f6e38980a7537e5354f4fe8732778d9d" \
 -d '{
     "flag_name": "enable-new-dashboard",
     "is_enabled": true,
@@ -74,7 +74,7 @@ Saída esperada: (Um JSON com os dados da regra criada).
 **3. Busque a Regra que você criou:**
 ```bash
 curl http://localhost:8003/rules/enable-new-dashboard \
--H "Authorization: Bearer SUA_CHAVE_API"
+-H "Authorization: Bearer tm_key_d42aa2ea6d3ddcf513733eba9d8a90c2f6e38980a7537e5354f4fe8732778d9d"
 ```
 Saída esperada: (O JSON da regra que você acabou de criar).
 
@@ -82,7 +82,7 @@ Saída esperada: (O JSON da regra que você acabou de criar).
 ```bash
 curl -X PUT http://localhost:8003/rules/enable-new-dashboard \
 -H "Content-Type: application/json" \
--H "Authorization: Bearer SUA_CHAVE_API" \
+-H "Authorization: Bearer tm_key_d42aa2ea6d3ddcf513733eba9d8a90c2f6e38980a7537e5354f4fe8732778d9d" \
 -d '{
     "rules": {
         "type": "PERCENTAGE",

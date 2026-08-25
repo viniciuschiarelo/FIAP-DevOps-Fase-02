@@ -8,9 +8,9 @@ services:
       POSTGRES_PASSWORD: authuser
       POSTGRES_DB: authuser
     ports:
-      - "5432:5432"
+      - "5435:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - auth_postgres_data:/var/lib/postgresql/data
       - ./auth-service/db/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U authuser -d authuser"]
@@ -39,7 +39,7 @@ services:
     ports: 
       - "5433:5432"
     volumes: 
-      - postgres_data:/var/lib/postgresql/data
+      - flags_postgres_data:/var/lib/postgresql/data
       - ./flag-service/db/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
@@ -50,9 +50,9 @@ services:
     container_name: flags_service
     build: ./flag-service
     environment:
-      - DATABASE_URL="postgres://flagsuser:flagsuser@localhost:5432/flagsuser"
-      - PORT="8002"
-      - AUTH_SERVICE_URL="http://localhost:8001"
+      - DATABASE_URL=postgres://flagsuser:flagsuser@flags_db:5432/flagsuser
+      - PORT=8002
+      - AUTH_SERVICE_URL=http://auth-service:8001
     ports:
       - "8002:8002"
     depends_on:
@@ -68,7 +68,7 @@ services:
     ports: 
       - "5434:5432"
     volumes: 
-      - postgres_data:/var/lib/postgresql/data
+      - targeting_postgres_data:/var/lib/postgresql/data
       - ./targeting-service/db/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
@@ -79,9 +79,9 @@ services:
     build: ./targeting-service
     container_name: targeting_service
     environment:
-      - DATABASE_URL="postgres://SEU_USUARIO:SUA_SENHA@localhost:5432/flags_db"
-      - PORT="8003"
-      - AUTH_SERVICE_URL="http://localhost:8003"
+      - DATABASE_URL=postgres://targetinguser:targetinguser@targeting_db:5432/targetinguser
+      - PORT=8003
+      - AUTH_SERVICE_URL=http://auth-service:8001
     ports:
       - "8003:8003"
     depends_on:
@@ -90,6 +90,7 @@ services:
 
 
     
-
 volumes:
-  postgres_data:
+  auth_postgres_data:
+  flags_postgres_data:
+  targeting_postgres_data:

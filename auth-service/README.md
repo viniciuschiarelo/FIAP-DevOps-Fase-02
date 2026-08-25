@@ -76,7 +76,7 @@ Saída esperada (A SUA CHAVE SERÁ DIFERENTE):
 
 ```bash
 curl http://localhost:8001/validate \
--H "Authorization: Bearer tm_key_df63b52f8945cb6d5b5648526d279570a69c8b1b28e6fbff0cee03172d08f016"
+-H "Authorization: Bearer tm_key_b51045d70328038395022c6b43debe57360e95799cd6913a45ecbc2b3c7e5cfc"
 ```
 
 Saída esperada: `{"message":"Chave válida"}`
