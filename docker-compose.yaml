@@ -87,10 +87,40 @@ services:
     depends_on:
       targeting_db:
         condition: service_healthy
-
+  evaluation_db:
+    image: redis:8.10.1-alpine
+    container_name: evaluation_db
+    ports:
+      - '6379:6379'
+    command: redis-server --requirepass your_password_here --appendonly yes
+    volumes:
+      - evaluation_redis_data:/data
+    environment:
+      - REDIS_ARGS=--requirepass "evaluationuser"  --appendonly yes
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
+  
+  evaluation_service:
+    build: ./evaluation-service
+    container_name: evaluation_service
+    environment:
+      - PORT=8004
+      - REDIS_URL=redis://localhost:6379
+      - FLAG_SERVICE_URL=http://localhost:8002
+      - TARGETING_SERVICE_URL=http://localhost:8003
+      - SERVICE_API_KEY=SUA_CHAVE_DE_SERVICO
+      - AWS_SQS_URL=[https://sqs.us-east-1.amazonaws.com/123456789012/sua-fila](https://sqs.us-east-1.amazonaws.com/123456789012/sua-fila)
+      - AWS_REGION=us-east-1
+    ports:
+      - "8004:8004"
+    depends_on:
+      evaluation_db:
+        condition: service_healthy
 
     
 volumes:
   auth_postgres_data:
   flags_postgres_data:
   targeting_postgres_data:
+  evaluation_redis_data:

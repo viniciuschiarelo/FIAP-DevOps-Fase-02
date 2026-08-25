@@ -1,7 +1,7 @@
 package main
 
 import (
-	"context"
+	"os"
 	"crypto/sha1"
 	"encoding/binary"
 	"encoding/json"
