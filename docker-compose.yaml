@@ -1,3 +1,9 @@
+name: togglemaster
+
+networks:
+  default:
+    name: togglemaster
+
 services:
   auth_db:
     image: postgres:16-alpine
@@ -17,11 +23,13 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
   auth_service:
     build: ./auth-service
     container_name: auth_service
+    restart: unless-stopped
     ports:
-      - "8081:8001"
+      - "8001:8001"
     environment:
       - DATABASE_URL=postgres://authuser:authuser@auth_db:5432/authuser?sslmode=disable
       - PORT=8001
@@ -29,9 +37,11 @@ services:
     depends_on:
       auth_db:
         condition: service_healthy
+
   flags_db:
     image: postgres:16-alpine
     container_name: flags_db
+    restart: unless-stopped
     environment:
       - POSTGRES_USER=flagsuser
       - POSTGRES_PASSWORD=flagsuser
@@ -46,21 +56,27 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
   flags_service:
     container_name: flags_service
     build: ./flag-service
+    restart: unless-stopped
     environment:
       - DATABASE_URL=postgres://flagsuser:flagsuser@flags_db:5432/flagsuser
       - PORT=8002
       - AUTH_SERVICE_URL=http://auth_service:8001
     ports:
-      - "8082:8002"
+      - "8002:8002"
     depends_on:
       flags_db:
         condition: service_healthy
+      auth_service:
+        condition: service_started
+
   targeting_db:
     image: postgres:16-alpine
     container_name: targeting_db
+    restart: unless-stopped
     environment:
       POSTGRES_USER: targetinguser
       POSTGRES_PASSWORD: targetinguser
@@ -75,23 +91,28 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
   targeting_service:
     build: ./targeting-service
     container_name: targeting_service
+    restart: unless-stopped
     environment:
       - DATABASE_URL=postgres://targetinguser:targetinguser@targeting_db:5432/targetinguser
       - PORT=8003
       - AUTH_SERVICE_URL=http://auth_service:8001
     ports:
-      - "8083:8003"
+      - "8003:8003"
     depends_on:
       targeting_db:
         condition: service_healthy
+      auth_service:
+        condition: service_started
+
   evaluation_db:
     image: redis:8.10.1-alpine
     container_name: evaluation_db
     ports:
-      - '6380:6379'
+      - "6379:6379"
     command: redis-server --requirepass evaluationuser  --appendonly yes
     volumes:
       - evaluation_redis_data:/data
@@ -102,6 +123,7 @@ services:
   evaluation_service:
     build: ./evaluation-service
     container_name: evaluation_service
+    restart: unless-stopped
     environment:
       - PORT=8004
       - REDIS_URL=redis://:evaluationuser@evaluation_db:6379
@@ -114,27 +136,37 @@ services:
       - SQS_ENDPOINT=http://sqs-local:9324
       - AWS_SQS_URL=http://sqs-local:9324/000000000000/sua-fila
     ports:
-      - "8084:8004"
+      - "8004:8004"
     depends_on:
       evaluation_db:
         condition: service_healthy
+      flags_service:
+        condition: service_started
+      targeting_service:
+        condition: service_started
+      sqs-local:
+        condition: service_started
+
   dynamodb-local:
     image: amazon/dynamodb-local:latest
     container_name: dynamodb-local
+    restart: unless-stopped
     ports:
       - "8000:8000"
-    # Use in-memory storage for fast test execution
     command: -jar DynamoDBLocal.jar -inMemory -sharedDb
     healthcheck:
-      test: [ "CMD-SHELL", "exec 3<>/dev/tcp/localhost/8000" ]
+      test: [ "CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8000" ]
       interval: 5s
       timeout: 5s
-      retries: 3
+      retries: 10
+      start_period: 40s
+
   analytics_service:
     build: ./analytics-service
     container_name: analytics_service
+    restart: unless-stopped
     ports:
-      - "8085:8005"
+      - "8005:8005"
     depends_on:
       dynamodb-local:
         condition: service_healthy
@@ -143,6 +175,7 @@ services:
       dynamodb-init:
         condition: service_completed_successfully
     environment:
+      - PORT=8005
       - AWS_ACCESS_KEY_ID=local
       - AWS_SECRET_ACCESS_KEY=local
       - AWS_REGION=us-east-1
@@ -168,18 +201,20 @@ services:
   dynamodb-admin:
     image: aaronshaf/dynamodb-admin
     container_name: dynamodb-admin
+    restart: unless-stopped
     ports:
       - "9002:8001"
     environment:
       - DYNAMO_ENDPOINT=http://dynamodb-local:8000
     depends_on:
       - dynamodb-local
+
   sqs-local:
     image: softwaremill/elasticmq-native
     container_name: sqs-local
     ports:
-      - "9327:9324"
-      - "9326:9325"
+      - "9324:9324"
+      - "9325:9325"
     volumes:
       - ./elasticmq.conf:/opt/elasticmq.conf
     restart: unless-stopped

@@ -1,0 +1,26 @@
+# Pastas lógicas para organizar cada serviço em um espaço proprio e posso referenciar eles 
+# em outros arquivos como Pods, Services, Deployments, etc.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: auth
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: flag
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: targeting
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: evaluation
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: analytics

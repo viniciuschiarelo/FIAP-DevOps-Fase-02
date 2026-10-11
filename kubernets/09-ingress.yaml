@@ -1,0 +1,103 @@
+# Ingress: porta de entrada HTTP do cluster. Quem executa as regras é o Ingress Controller (ingress-nginx).
+# Pré-requisitos:
+#   - ingress-nginx instalado (kubectl get ingressclass deve listar "nginx")
+#   - "127.0.0.1 togglemaster.local" no /etc/hosts
+# Um Ingress só enxerga Services do PRÓPRIO namespace, por isso há um Ingress por namespace,
+# todos com o mesmo host. O controller junta as regras e roteia pelo path.
+# O analytics não é exposto: ele só consome a fila SQS.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: auth
+  namespace: auth
+  labels:
+    app.kubernetes.io/name: auth
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: togglemaster.local
+      http:
+        paths:
+          - path: /validate
+            pathType: Prefix
+            backend:
+              service:
+                name: auth
+                port:
+                  number: 8001
+          - path: /admin
+            pathType: Prefix
+            backend:
+              service:
+                name: auth
+                port:
+                  number: 8001
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: flag
+  namespace: flag
+  labels:
+    app.kubernetes.io/name: flag
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: togglemaster.local
+      http:
+        paths:
+          - path: /flags
+            pathType: Prefix
+            backend:
+              service:
+                name: flag
+                port:
+                  number: 8002
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: targeting
+  namespace: targeting
+  labels:
+    app.kubernetes.io/name: targeting
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: togglemaster.local
+      http:
+        paths:
+          - path: /rules
+            pathType: Prefix
+            backend:
+              service:
+                name: targeting
+                port:
+                  number: 8003
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: evaluation
+  namespace: evaluation
+  labels:
+    app.kubernetes.io/name: evaluation
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: togglemaster.local
+      http:
+        paths:
+          - path: /evaluate
+            pathType: Prefix
+            backend:
+              service:
+                name: evaluation
+                port:
+                  number: 8004

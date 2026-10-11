@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: targeting
+  namespace: targeting
+spec:
+  # Sem "replicas": quem controla a quantidade de pods é o KEDA (ScaledObject abaixo).
+  selector:
+    matchLabels:
+      app: targeting
+  template:
+    metadata:
+      labels:
+        app: targeting
+    spec:
+      containers:
+        - name: targeting
+          imagePullPolicy: Never
+          image: fiap-techchallenge-fase02-targeting-service:latest
+          envFrom:
+            - configMapRef:
+                name: configmap
+            - secretRef:
+                name: mysecret
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "100m"
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+          ports:
+            - containerPort: 8003
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: targeting
+  namespace: targeting
+spec:
+  selector:
+    app: targeting
+  type: ClusterIP
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8003
+      targetPort: 8003
+
+---
+# KEDA: escala pelo uso de CPU (% do requests.cpu do container). Precisa do metrics-server.
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: targeting
+  namespace: targeting
+spec:
+  scaleTargetRef:
+    name: targeting
+  minReplicaCount: 2
+  maxReplicaCount: 5
+  triggers:
+    - type: cpu
+      metricType: Utilization
+      metadata:
+        value: "70"
