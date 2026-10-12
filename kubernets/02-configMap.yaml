@@ -44,8 +44,7 @@ data:
   FLAG_SERVICE_URL: "http://flag.flag.svc.cluster.local:8002"
   TARGETING_SERVICE_URL: "http://targeting.targeting.svc.cluster.local:8003"
   AWS_REGION: "us-east-1"
-  SQS_ENDPOINT: "http://host.docker.internal:9324"
-  AWS_SQS_URL: "http://host.docker.internal:9324/000000000000/sua-fila"
+  AWS_SQS_URL: "https://sqs.us-east-1.amazonaws.com/217140917440/evaluation-service-sqs"
 
 ---
 
@@ -58,6 +57,4 @@ data:
   PORT: "8005"
   AWS_REGION: "us-east-1"
   AWS_DYNAMODB_TABLE: "ToggleMasterAnalytics"
-  DYNAMODB_ENDPOINT: "http://host.docker.internal:8000"
-  SQS_ENDPOINT: "http://host.docker.internal:9324"
-  AWS_SQS_URL: "http://host.docker.internal:9324/000000000000/sua-fila"
+  AWS_SQS_URL: "https://sqs.us-east-1.amazonaws.com/217140917440/evaluation-service-sqs"

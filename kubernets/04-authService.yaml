@@ -15,13 +15,25 @@ spec:
     spec:
       containers:
         - name: auth
-          imagePullPolicy: Never
           envFrom:
             - configMapRef:
                 name: configmap
             - secretRef:
                 name: mysecret
-          image: fiap-techchallenge-fase02-auth-service:latest
+          image: 217140917440.dkr.ecr.us-east-1.amazonaws.com/auth-image:latest
+          readinessProbe:          # "pronto para receber tráfego?" Se falhar, o Service para de mandar requisições
+            httpGet:
+              path: /health
+              port: 8001
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:           # "está vivo?" Se falhar várias vezes, o kubelet reinicia o container
+            httpGet:
+              path: /health
+              port: 8001
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            failureThreshold: 3
           resources:
             requests:
               memory: "64Mi"

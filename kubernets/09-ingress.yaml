@@ -1,9 +1,8 @@
 # Ingress: porta de entrada HTTP do cluster. Quem executa as regras é o Ingress Controller (ingress-nginx).
 # Pré-requisitos:
 #   - ingress-nginx instalado (kubectl get ingressclass deve listar "nginx")
-#   - "127.0.0.1 togglemaster.local" no /etc/hosts
 # Um Ingress só enxerga Services do PRÓPRIO namespace, por isso há um Ingress por namespace,
-# todos com o mesmo host. O controller junta as regras e roteia pelo path.
+# sem host: respondem direto no DNS do Load Balancer. O controller junta as regras e roteia pelo path.
 # O analytics não é exposto: ele só consome a fila SQS.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -15,8 +14,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: togglemaster.local
-      http:
+    - http:
         paths:
           - path: /validate
             pathType: Prefix
@@ -45,8 +43,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: togglemaster.local
-      http:
+    - http:
         paths:
           - path: /flags
             pathType: Prefix
@@ -68,8 +65,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: togglemaster.local
-      http:
+    - http:
         paths:
           - path: /rules
             pathType: Prefix
@@ -91,8 +87,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: togglemaster.local
-      http:
+    - http:
         paths:
           - path: /evaluate
             pathType: Prefix

@@ -13,15 +13,29 @@ spec:
       labels:
         app: analytics
     spec:
+      # ServiceAccount criada pelo eksctl (IRSA): dá permissão de SQS e DynamoDB ao pod sem chave de acesso.
+      serviceAccountName: analytics-sa
       containers:
         - name: analytics
-          imagePullPolicy: Never
-          image: fiap-techchallenge-fase02-analytics-service:latest
+          image: 217140917440.dkr.ecr.us-east-1.amazonaws.com/analytics-image:latest
           envFrom:
             - configMapRef:
                 name: configmap
-            - secretRef:
-                name: mysecret
+          # readiness: "pronto para receber tráfego?" Se falhar, o Service para de mandar requisições ao pod.
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8005
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          # liveness: "está vivo?" Se falhar 3 vezes seguidas, o kubelet reinicia o container.
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8005
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            failureThreshold: 3
           resources:
             requests:
               memory: "64Mi"
@@ -49,20 +63,15 @@ spec:
       targetPort: 8005
 
 ---
-# Credenciais AWS que o KEDA usa para ler o tamanho da fila (vêm do Secret do namespace).
+# O KEDA lê o tamanho da fila com a permissão do próprio operador (ServiceAccount keda-operator com IRSA).
 apiVersion: keda.sh/v1alpha1
 kind: TriggerAuthentication
 metadata:
   name: aws-credentials
   namespace: analytics
 spec:
-  secretTargetRef:
-    - parameter: awsAccessKeyID
-      name: mysecret
-      key: AWS_ACCESS_KEY_ID
-    - parameter: awsSecretAccessKey
-      name: mysecret
-      key: AWS_SECRET_ACCESS_KEY
+  podIdentity:
+    provider: aws
 
 ---
 # KEDA: o analytics só consome a fila, então escala pela quantidade de mensagens no SQS.
@@ -82,7 +91,6 @@ spec:
       authenticationRef:
         name: aws-credentials
       metadata:
-        queueURL: "http://host.docker.internal:9324/000000000000/sua-fila"
+        queueURL: "https://sqs.us-east-1.amazonaws.com/217140917440/evaluation-service-sqs"
         queueLength: "5"
         awsRegion: "us-east-1"
-        awsEndpoint: "http://host.docker.internal:9324"

@@ -13,15 +13,31 @@ spec:
       labels:
         app: evaluation
     spec:
+      # ServiceAccount criada pelo eksctl (IRSA): dá permissão de SQS ao pod sem chave de acesso.
+      serviceAccountName: evaluation-sa
       containers:
         - name: evaluation
-          imagePullPolicy: Never
-          image: fiap-techchallenge-fase02-evaluation-service:latest
+          image: 217140917440.dkr.ecr.us-east-1.amazonaws.com/evaluation-image:latest
           envFrom:
             - configMapRef:
                 name: configmap
             - secretRef:
                 name: mysecret
+          # readiness: "pronto para receber tráfego?" Se falhar, o Service para de mandar requisições ao pod.
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8004
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          # liveness: "está vivo?" Se falhar 3 vezes seguidas, o kubelet reinicia o container.
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8004
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            failureThreshold: 3
           resources:
             requests:
               memory: "64Mi"
